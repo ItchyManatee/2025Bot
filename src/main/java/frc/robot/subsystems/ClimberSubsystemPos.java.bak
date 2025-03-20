@@ -1,0 +1,118 @@
+package frc.robot.subsystems;
+
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.ClimberSubsystemConstants;
+
+public class ClimberSubsystemPos extends SubsystemBase {
+    private final TalonFX m_climberMotor;
+
+    public ClimberSubsystemPos() {
+        m_climberMotor = new TalonFX(ClimberSubsystemConstants.kClimberMotorCanId);
+
+        // Set initial position to 0
+        m_climberMotor.setPosition(0);
+
+        // Set neutral mode to brake to hold the climber position when motor power is not applied
+        m_climberMotor.setNeutralMode(NeutralModeValue.Brake);
+
+        // Set the safety enabled to ensure the motor stops if not regularly updated
+        m_climberMotor.setSafetyEnabled(true);
+        m_climberMotor.setExpiration(0.1); // 100ms expiration time for the safety feature
+    }
+
+    @Override
+    public void periodic() {
+        // Feed the motor safety object to ensure the motor does not get disabled
+        m_climberMotor.feed();
+    }
+
+    public void setClimberMotor(double speed) {
+        m_climberMotor.set(speed);
+    }
+
+    public Command moveClimber(double speed) {
+        return new MoveClimberCommand(speed);
+    }
+
+    public Command moveClimberOverride(double speed) {
+        return new MoveClimberOverrideCommand(speed);
+    }
+
+    // Inner class for operating the climber with speed and position limits
+    public class MoveClimberCommand extends Command {
+        private final double speed;
+
+        public MoveClimberCommand(double speed) {
+            this.speed = speed;
+            // Add requirements to ensure this command has exclusive access to the ClimberSubsystem
+            addRequirements(ClimberSubsystemPos.this);
+        }
+
+        @Override
+        public void execute() {
+            // Acquire a refreshed TalonFX rotor position signal
+            var rotorPosSignal = m_climberMotor.getRotorPosition();
+
+            // Retrieve position value that we just refreshed, units are rotations
+            var rotorPos = rotorPosSignal.getValue();
+            SmartDashboard.putNumber("Climber Rotation", rotorPos);
+
+            // If not at limit, it can move down
+            if (speed < 0) {
+                if (rotorPos > ClimberSubsystemConstants.kBottomLimit) {
+                    setClimberMotor(speed);
+                } else {
+                    setClimberMotor(0);
+                }
+            }
+
+            // If not at limit, it can move up
+            if (speed > 0) {
+                if (rotorPos < ClimberSubsystemConstants.kTopLimit) {
+                    setClimberMotor(speed);
+                } else {
+                    setClimberMotor(0);
+                }
+            }
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            // Command end action: Stop the climber motor, whether the command ends normally or is interrupted
+            setClimberMotor(0);
+        }
+    }
+
+    // Inner class for operating the climber without position limits
+    public class MoveClimberOverrideCommand extends Command {
+        private final double speed;
+
+        public MoveClimberOverrideCommand(double speed) {
+            this.speed = speed;
+            // Add requirements to ensure this command has exclusive access to the ClimberSubsystem
+            addRequirements(ClimberSubsystemPos.this);
+        }
+
+        @Override
+        public void execute() {
+            // Acquire a refreshed TalonFX rotor position signal
+            var rotorPosSignal = m_climberMotor.getRotorPosition();
+
+            // Retrieve position value that we just refreshed, units are rotations
+            var rotorPos = rotorPosSignal.getValue();
+            SmartDashboard.putNumber("Climber Rotation", rotorPos);
+
+            setClimberMotor(speed);
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            // Command end action: Stop the climber motor, whether the command ends normally or is interrupted
+            setClimberMotor(0);
+        }
+    }
+}
