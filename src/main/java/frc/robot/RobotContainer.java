@@ -69,7 +69,7 @@ public class RobotContainer {
 
         //m_climberSubsystem.setDefaultCommand(m_climberSubsystem.moveClimber(0));
 
-        m_coralGroundIntakeSubsystem.setDefaultCommand(m_coralGroundIntakeSubsystem.idleCommand());
+        //m_coralGroundIntakeSubsystem.setDefaultCommand(m_coralGroundIntakeSubsystem.idleCommand());
 
     }
 
@@ -92,17 +92,41 @@ public class RobotContainer {
 
         //m_opController.rightTrigger().whileTrue(m_climberSubsystem.moveClimber(0.15));
 
-        //m_opController.leftBumper().whileTrue(m_coralGroundIntakeSubsystem.movePivot(-0.25));
+        m_opController.leftBumper().whileTrue(m_coralGroundIntakeSubsystem.movePivot(-0.25));
 
-        //m_opController.rightBumper().whileTrue(m_coralGroundIntakeSubsystem.movePivot(0.65));
+        m_opController.rightBumper().whileTrue(m_coralGroundIntakeSubsystem.movePivot(0.65));
 
         m_opController.y().whileTrue(m_coralGroundIntakeSubsystem.moveIntake(0.5));
 
         m_opController.x().whileTrue(m_coralGroundIntakeSubsystem.moveIntake(-0.5));
 
-        m_opController.pov(0).whileTrue(m_coralGroundIntakeSubsystem.moveToScorePosition());
-        m_opController.pov(90).whileTrue(m_coralGroundIntakeSubsystem.moveToGroundPosition());
-        m_opController.pov(180).whileTrue(m_coralGroundIntakeSubsystem.moveToStowPosition());
+        // Move to score position with POV 0
+        m_opController
+            .pov(90)
+            .onTrue(
+                m_coralGroundIntakeSubsystem.moveToScorePosition()
+                    .withName("MoveToScorePosition"));
+        
+        // Move to catch position with POV 270
+        m_opController
+        .pov(270)
+        .onTrue(
+            m_coralGroundIntakeSubsystem.moveToCatchPosition()
+                .withName("MoveToCatchPosition"));
+                
+        // Move to ground position with POV 90
+        m_opController
+            .pov(180)
+            .onTrue(
+                m_coralGroundIntakeSubsystem.moveToGroundPosition()
+                    .withName("MoveToGroundPosition"));
+        
+        // Move to stow position with POV 180
+        m_opController
+            .pov(0)
+            .onTrue(
+                m_coralGroundIntakeSubsystem.moveToStowPosition()
+                    .withName("MoveToStowPosition"));
         
     }
 
@@ -124,17 +148,33 @@ public class RobotContainer {
                 // Start at the origin facing the +X direction
                 new Pose2d(0, 0, new Rotation2d(0)),
                 // Pass through these two interior waypoints, making an 's' curve path
-                List.of(),
+                List.of(new Translation2d(-1, 0)),
                 // End 2 meters straight ahead of where we started, facing forward
-                new Pose2d(2, 0, new Rotation2d(0)),
+                new Pose2d(0, 0, new Rotation2d(0)),
                 config);
+
+        // From WPILib
+        var trajectoryOne =
+        TrajectoryGenerator.generateTrajectory(
+            new Pose2d(0, 0, Rotation2d.fromDegrees(0)),
+            List.of(new Translation2d(-1.1, 0.1), new Translation2d(-1.65, -0.1)),
+            new Pose2d(-2.0, 0., Rotation2d.fromDegrees(0.20)),
+            config);
+        // var trajectoryTwo =
+        // TrajectoryGenerator.generateTrajectory(
+        //     new Pose2d(3, 0, Rotation2d.fromDegrees(0)),
+        //     List.of(new Translation2d(4, 4), new Translation2d(6, 3)),
+        //     new Pose2d(6, 0, Rotation2d.fromDegrees(0)),
+        //     new TrajectoryConfig(Units.feetToMeters(3.0), Units.feetToMeters(3.0)));
+        // var concatTraj = trajectoryOne.concatenate(trajectoryTwo);
 
         var thetaController = new ProfiledPIDController(
                 AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
         thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
         SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-                exampleTrajectory,
+                // exampleTrajectory,
+                trajectoryOne,
                 m_robotDrive::getPose, // Functional interface to feed supplier
                 DriveConstants.kDriveKinematics,
 

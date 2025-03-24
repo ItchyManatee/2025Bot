@@ -105,11 +105,11 @@ public final class Constants {
     public static int kPivotMotorCanId = 32;
     public static int kIntakeMotorCanId = 31;
     public static int kPivotEncoderPort = 9;
-    public static double kP;
-    public static double kI;
-    public static double kD;
-    public static double kV;
-    public static double kS;
+    public static double kP = 24.0;
+    public static double kI = 0.5;
+    public static double kD = 0.0;
+    public static double kV = 0.0;
+    public static double kS = 0.0;
   }
 
   public static final class OIConstants {
